@@ -1,0 +1,445 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="icon" type="image/png" href="https://sea-math-official.neocities.org/Little%20Bun%20Son%20(5).png" />
+<meta charset="UTF-8">
+<title>Sea Bean Player</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+:root{
+  --accent:#8fd3ff;
+  --glass:rgba(255,255,255,.09);
+  --stroke:rgba(255,255,255,.14);
+  --text:#eef2fb;
+  --muted:#9aa6c4;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+body{
+  height:100vh;
+  background:radial-gradient(circle at top,#0b1220,#02040a);
+  font-family:system-ui;
+  color:var(--text);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+.app{
+  width:960px;
+  height:560px;
+  display:flex;
+  gap:18px;
+  transition:.35s ease;
+}
+
+.app.lyrics-mode{width:1180px}
+
+.panel{
+  background:var(--glass);
+  border:1px solid var(--stroke);
+  backdrop-filter:blur(20px);
+  border-radius:26px;
+  padding:16px;
+}
+
+/* PLAYER */
+.player{
+  width:360px;
+  display:flex;
+  flex-direction:column;
+}
+
+.app.lyrics-mode .player{width:520px}
+
+.cover{
+  height:220px;
+  border-radius:20px;
+  overflow:hidden;
+}
+
+.app.lyrics-mode .cover{height:300px}
+
+.cover img,
+.cover video{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+.title{text-align:center;margin-top:10px;font-weight:600}
+.artist{text-align:center;font-size:14px;color:var(--muted)}
+
+.progress{
+  height:6px;
+  background:rgba(255,255,255,.15);
+  border-radius:6px;
+  margin:14px 0;
+  cursor:pointer;
+}
+.progress span{display:block;height:100%;width:0%;background:var(--accent)}
+
+.controls{
+  display:flex;
+  justify-content:center;
+  gap:14px;
+}
+
+.ctrl{
+  width:44px;
+  height:44px;
+  border-radius:50%;
+  background:rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.2);
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+  font-size:18px;
+}
+
+/* SIDE */
+.side{flex:1;display:flex;flex-direction:column}
+
+.header{display:flex;gap:8px;margin-bottom:8px}
+
+input{
+  flex:1;
+  padding:10px 12px;
+  border-radius:14px;
+  border:none;
+  background:rgba(255,255,255,.12);
+  color:white;
+}
+
+.tab{
+  padding:8px 14px;
+  border-radius:14px;
+  background:rgba(255,255,255,.12);
+  cursor:pointer;
+}
+
+.view{flex:1;overflow-y:auto;display:none}
+.view.active{display:block}
+.view::-webkit-scrollbar{width:0}
+
+.song{
+  padding:10px;
+  border-radius:12px;
+  display:flex;
+  justify-content:space-between;
+  cursor:pointer;
+}
+.song:hover{background:rgba(255,255,255,.12)}
+
+.small{color:var(--muted);cursor:pointer}
+
+/* LYRICS */
+.lyrics{
+  padding:26px;
+  line-height:2.2;
+  font-size:17px;
+}
+
+.lyrics div{
+  opacity:.35;
+  padding:6px 0;
+  transition:.25s;
+}
+
+.lyrics .active{
+  opacity:1;
+  color:var(--accent);
+  text-shadow:0 0 14px rgba(143,211,255,.6);
+}
+
+/* PLAYLIST */
+.playlist{
+  padding:12px;
+  border-radius:16px;
+  background:rgba(255,255,255,.1);
+  margin-bottom:10px;
+  cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="app" id="app">
+
+  <div class="panel player">
+    <div class="cover">
+      <img id="cover">
+      <video id="cover-video" muted playsinline loop style="display:none"></video>
+    </div>
+
+    <div class="title" id="title">Not Playing</div>
+    <div class="artist" id="artist"></div>
+
+    <div class="progress" onclick="seek(event)">
+      <span id="bar"></span>
+    </div>
+
+    <div class="controls">
+      <div class="ctrl" onclick="prev()">⏮</div>
+      <div class="ctrl" onclick="toggle()" id="playBtn">▶</div>
+      <div class="ctrl" onclick="shuffle()">🔀</div>
+      <div class="ctrl" onclick="next()">⏭</div>
+    </div>
+  </div>
+
+  <div class="panel side">
+    <div class="header">
+      <input placeholder="Search">
+      <div class="tab" onclick="showView('library')">Library</div>
+      <div class="tab" onclick="showView('lyrics')">Lyrics</div>
+      <div class="tab" onclick="showView('playlists')">Playlists</div>
+    </div>
+
+    <div class="view active" id="library"></div>
+    <div class="view lyrics" id="lyrics">Select a song</div>
+    <div class="view" id="playlists"></div>
+  </div>
+
+</div>
+
+<audio id="audio"></audio>
+
+<script>
+const app=document.getElementById("app");
+const audio=document.getElementById("audio");
+const video=document.getElementById("cover-video");
+const img=document.getElementById("cover");
+const bar=document.getElementById("bar");
+const lyricsEl=document.getElementById("lyrics");
+const library=document.getElementById("library");
+const playlistsEl=document.getElementById("playlists");
+const title=document.getElementById("title");
+const artist=document.getElementById("artist");
+const playBtn=document.getElementById("playBtn");
+
+const LIBRARY=[ {
+    title:"Elephant Cage",
+    artist:"overtonight",
+    audio:"https://cdn.jsdelivr.net/gh/sea-bean-unblocked/Music@main/elephant_cage_KLICKAUD.mp3",
+    cover:"https://cdn.jsdelivr.net/gh/sea-bean-unblocked/Music@main/overtonight%20-%20elephant%20cage%20(official%20video).mp4",
+    lyrics:"https://sea-math-official.neocities.org/Music/errorm.txt"
+  },
+  {
+    title:"Why He Told",
+    artist:"King Von ",
+    audio:"https://cdn.jsdelivr.net/gh/sea-bean-unblocked/Music@main/Why_He_Told_KLICKAUD.mp3",
+    cover:"https://i1.sndcdn.com/artworks-1Jx5xPL0xFlZaFbv-2W3ywg-t1080x1080.jpg",
+    lyrics:"https://sea-math-official.neocities.org/Music/WHT.txt"
+  },
+    {
+    title:"End Of Beginning",
+    artist:"Djo",
+    audio:"https://cdn.jsdelivr.net/gh/sea-bean-unblocked/Music@main/End_of_Beginning_KLICKAUD.mp3",
+    cover:"https://cdn.jsdelivr.net/gh/sea-bean-unblocked/Music@main/Djo%20-%20End%20of%20Beginning%20(Official%20Music%20Video).mp4",
+    lyrics:"https://sea-math-official.neocities.org/Music/errorm.txt"
+  },
+  {
+    title:"I Thought I Saw Your Face Today",
+    artist:"She & Him ",
+    audio:"https://cdn.jsdelivr.net/gh/sea-bean-unblocked/Music@main/I_Thought_I_Saw_Your_Face_Today_KLICKAUD.mp3",
+    cover:"https://i1.sndcdn.com/artworks-nyKCzCw1tSPB-0-t1080x1080.jpg",
+    lyrics:"https://sea-math-official.neocities.org/Music/Day.txt"
+  },
+    {
+    title:"Switch Her",
+    artist:"NevermadeSunday",
+    audio:"https://cdn.jsdelivr.net/gh/sea-bean-unblocked/Music@main/switch_her_KLICKAUD.mp3",
+    cover:"https://cdn.jsdelivr.net/gh/sea-bean-unblocked/Music@main/unnamed%20(1).gif",
+    lyrics:"https://sea-math-official.neocities.org/Music/errorm.txt"
+  },
+      
+      {
+    title:"Mirrrors Demo",
+    artist:"Overtonght",
+    audio:"https://cdn.jsdelivr.net/gh/sea-bean-unblocked/Music@main/overtonight%20-%20mirrors%20demo%20official%20video.mp3",
+    cover:"https://cdn.jsdelivr.net/gh/sea-bean-unblocked/Music@main/videoplayback.mp4",
+    lyrics:"https://sea-math-official.neocities.org/Music/errorm.txt"
+  },
+  {
+    title:"Sad Funk",
+    artist:"UNKOWN",
+    audio:"https://cdn.jsdelivr.net/gh/sea-bean-unblocked/Music@main/SAD%20FUNK.mp3",
+    cover:"https://cdn.jsdelivr.net/gh/sea-bean-unblocked/Music@main/videoplayback%20(1).mp4",
+    lyrics:"https://sea-math-official.neocities.org/Music/errorm.txt"
+  }
+  ];
+
+let queue=[],index=0,lrc=[],last=-1;
+let PLAYLISTS=JSON.parse(localStorage.getItem("sb_playlists"))||{};
+const save=()=>localStorage.setItem("sb_playlists",JSON.stringify(PLAYLISTS));
+
+function showView(v){
+  document.querySelectorAll(".view").forEach(e=>e.classList.remove("active"));
+  document.getElementById(v).classList.add("active");
+  app.classList.toggle("lyrics-mode",v==="lyrics");
+}
+
+/* PLAYER */
+function play(song){
+  audio.src=song.audio;
+  audio.play();
+  title.textContent=song.title;
+  artist.textContent=song.artist;
+  setCover(song.cover);
+  loadLyrics(song.lyrics);
+  playBtn.textContent="⏸";
+}
+
+function toggle(){
+  if(audio.paused){
+    audio.play();video.play();playBtn.textContent="⏸";
+  }else{
+    audio.pause();video.pause();playBtn.textContent="▶";
+  }
+}
+
+function next(){if(index<queue.length-1) play(queue[++index])}
+function prev(){if(index>0) play(queue[--index])}
+function shuffle(){queue=[...queue].sort(()=>Math.random()-.5);index=0;play(queue[0])}
+
+/* TIME + LYRICS SYNC */
+audio.ontimeupdate=()=>{
+  bar.style.width=(audio.currentTime/audio.duration*100||0)+"%";
+  if(!video.paused) video.currentTime=audio.currentTime;
+
+  let i=lrc.findIndex((l,j)=>audio.currentTime<l.t&&j>0)-1;
+  if(i!==last && i>=0){
+    lyricsEl.children[last]?.classList.remove("active");
+    lyricsEl.children[i]?.classList.add("active");
+    lyricsEl.children[i]?.scrollIntoView({behavior:"smooth",block:"center"});
+    last=i;
+  }
+};
+
+function seek(e){
+  const r=e.currentTarget.getBoundingClientRect();
+  const t=((e.clientX-r.left)/r.width)*audio.duration;
+  audio.currentTime=t;
+  video.currentTime=t;
+}
+
+/* LIBRARY */
+function renderLibrary(){
+  library.innerHTML="";
+  LIBRARY.forEach((s,i)=>{
+    const d=document.createElement("div");
+    d.className="song";
+    d.innerHTML=`${s.title}<span class="small">❤️</span>`;
+    d.onclick=()=>{queue=[...LIBRARY];index=i;play(queue[index])};
+    d.querySelector(".small").onclick=e=>{
+      e.stopPropagation();
+      PLAYLISTS.Favorites=PLAYLISTS.Favorites||[];
+      PLAYLISTS.Favorites.push(s);
+      save();renderPlaylists();
+    };
+    library.appendChild(d);
+  });
+}
+renderLibrary();
+
+/* PLAYLISTS */
+function renderPlaylists(){
+  playlistsEl.innerHTML="";
+  Object.keys(PLAYLISTS).forEach(name=>{
+    const p=document.createElement("div");
+    p.className="playlist";
+    p.textContent=name+" ("+PLAYLISTS[name].length+")";
+    p.onclick=()=>{queue=[...PLAYLISTS[name]];index=0;play(queue[0])};
+    playlistsEl.appendChild(p);
+  });
+}
+renderPlaylists();
+
+/* LYRICS LOAD */
+async function loadLyrics(url){
+  lyricsEl.textContent="Loading…";
+  try{
+    const t=await fetch(url).then(r=>r.text());
+    lyricsEl.innerHTML="";
+    lrc=[];last=-1;
+    t.split("\n").forEach(l=>{
+      const m=l.match(/\[(\d+):(\d+\.?\d*)\](.*)/);
+      if(m) lrc.push({t:+m[1]*60+ +m[2],text:m[3]});
+    });
+    lrc.forEach(x=>{
+      const d=document.createElement("div");
+      d.textContent=x.text;
+      lyricsEl.appendChild(d);
+    });
+  }catch{lyricsEl.textContent="No lyrics found";}
+}
+
+/* COVER */
+function setCover(src){
+  if(src.endsWith(".mp4")){
+    img.style.display="none";
+    video.src=src;
+    video.style.display="block";
+    video.play();
+  }else{
+    video.pause();
+    video.style.display="none";
+    img.src=src;
+    img.style.display="block";
+  }
+}
+
+audio.onended=()=>{audio.currentTime=0;video.currentTime=0;audio.play();video.play()};
+</script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCK730UgPUCtFKLACzSgGAAC1NK7EGrwhI",
+  authDomain: "nannin-2f398.firebaseapp.com",
+  projectId: "nannin-2f398"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+window.submitID = async () => {
+  const id = userIdInput.value.trim();
+  if (!id) return alert("Enter a valid ID");
+  localStorage.setItem("USER_ID", id);
+  await checkUser(id);
+};
+
+async function checkUser(id) {
+  const ref = doc(db, "users", id);
+  const snap = await getDoc(ref);
+
+  if (!snap.exists()) {
+    await setDoc(ref, { banned: false, createdAt: serverTimestamp() });
+  }
+
+  const data = (await getDoc(ref)).data();
+  if (data.banned) {
+    document.body.innerHTML = "<h1 style='text-align:center'>You are banned. lbozo EAT MUD </h1>";
+    return;
+  }
+
+  idGate.remove();
+}
+
+const saved = localStorage.getItem("USER_ID");
+if (saved) checkUser(saved);
+
+window.loadPage = (el, url) => {
+  document.querySelectorAll(".item").forEach(i => i.classList.remove("active"));
+  el.classList.add("active");
+  mainFrame.src = url;
+};
+</script>
+</body>
+</html>

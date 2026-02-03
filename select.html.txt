@@ -1,0 +1,71 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Deep Sea Button</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+html, body {
+  margin: 0;
+  height: 100%;
+  background: radial-gradient(circle at top, #041922, #010507 70%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: system-ui, sans-serif;
+}
+
+/* container so buttons don’t mess with layout */
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+button {
+  appearance: none;
+  outline: none;
+  border: none;
+
+  padding: 16px 42px;
+  font-size: 15px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+
+  color: #d9f3ff;
+  background: linear-gradient(180deg, #0a2f3f, #051a23);
+  border-radius: 10px;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 8px 18px rgba(0,0,0,.7),
+    inset 0 1px 0 rgba(180,230,255,.08);
+
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 14px 26px rgba(0,0,0,.85),
+    inset 0 1px 0 rgba(200,240,255,.12);
+}
+
+button:active {
+  transform: translateY(1px);
+}
+</style>
+</head>
+
+<body>
+
+<div class="wrap">
+  <button onclick="location.href='https://latte-x.neocities.org/chnat'">ENTER API GAM3S 300+</button>
+  <button onclick="location.href='https://sea-math-official.neocities.org/gn-math'">Enter Gn Math Games 600+ (some dont work)</button>
+</div>
+
+</body>
+</html>

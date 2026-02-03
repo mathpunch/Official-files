@@ -1,0 +1,145 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Deep Sea Word</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    height: 100vh;
+    background:
+      radial-gradient(circle at top, #0b2a3f, #020b14);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    font-family: system-ui, sans-serif;
+    color: #cfeaff;
+  }
+
+  /* soft light rays */
+  body::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:
+      linear-gradient(120deg, transparent 40%, rgba(120,200,255,.08), transparent 60%);
+    animation: rays 8s linear infinite;
+    pointer-events:none;
+  }
+
+  @keyframes rays{
+    from{transform:translateX(-30%)}
+    to{transform:translateX(30%)}
+  }
+
+  .word {
+    display: flex;
+    gap: 8px;
+    cursor: grab;
+    user-select: none;
+  }
+
+  .letter {
+    font-size: 64px;
+    font-weight: 700;
+
+    cursor: grab;
+    position: relative;
+    transition: transform .15s ease;
+  }
+
+  .dragging {
+    cursor: grabbing;
+    transition: none;
+  }
+</style>
+</head>
+<body>
+
+<div class="word" id="word">
+  <div class="letter">S</div>
+  <div class="letter">E</div>
+  <div class="letter">A</div>
+</div>
+
+<script>
+  const draggables = document.querySelectorAll('.word, .letter');
+
+  draggables.forEach(el => {
+    let startX = 0, startY = 0;
+
+    el.addEventListener('pointerdown', e => {
+      startX = e.clientX;
+      startY = e.clientY;
+      el.classList.add('dragging');
+      el.setPointerCapture(e.pointerId);
+    });
+
+    el.addEventListener('pointermove', e => {
+      if (!el.classList.contains('dragging')) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      el.style.transform = `translate(${dx}px, ${dy}px)`;
+    });
+
+    el.addEventListener('pointerup', () => snapBack(el));
+    el.addEventListener('pointercancel', () => snapBack(el));
+  });
+
+  function snapBack(el){
+    el.classList.remove('dragging');
+    el.style.transform = 'translate(0,0)';
+  }
+</script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCK730UgPUCtFKLACzSgGAAC1NK7EGrwhI",
+  authDomain: "nannin-2f398.firebaseapp.com",
+  projectId: "nannin-2f398"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+window.submitID = async () => {
+  const id = userIdInput.value.trim();
+  if (!id) return alert("Enter a valid ID");
+  localStorage.setItem("USER_ID", id);
+  await checkUser(id);
+};
+
+async function checkUser(id) {
+  const ref = doc(db, "users", id);
+  const snap = await getDoc(ref);
+
+  if (!snap.exists()) {
+    await setDoc(ref, { banned: false, createdAt: serverTimestamp() });
+  }
+
+  const data = (await getDoc(ref)).data();
+  if (data.banned) {
+    document.body.innerHTML = "<h1 style='text-align:center'>You are banned. lbozo EAT MUD </h1>";
+    return;
+  }
+
+  idGate.remove();
+}
+
+const saved = localStorage.getItem("USER_ID");
+if (saved) checkUser(saved);
+
+window.loadPage = (el, url) => {
+  document.querySelectorAll(".item").forEach(i => i.classList.remove("active"));
+  el.classList.add("active");
+  mainFrame.src = url;
+};
+</script>
+</body>
+</html>

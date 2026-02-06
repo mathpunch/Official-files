@@ -82,6 +82,26 @@ body {
   transform: translateY(10px) scale(0.98);
   pointer-events: none;
   transition: opacity 0.25s ease 0.12s, transform 0.25s ease 0.12s;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.panel::-webkit-scrollbar-track {
+  background: rgba(255,255,255,0.05);
+  border-radius: 3px;
+}
+
+.panel::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.2);
+  border-radius: 3px;
+}
+
+.panel::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.3);
 }
 
 .hover-zone:hover .panel {

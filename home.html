@@ -1,145 +1,157 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Deep Sea Word</title>
+<title>Home</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <style>
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    height: 100vh;
-    background:
-      radial-gradient(circle at top, #0b2a3f, #020b14);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    font-family: system-ui, sans-serif;
-    color: #cfeaff;
-  }
+*{box-sizing:border-box}
+body{
+  margin:0;
+  height:100vh;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  font-family:system-ui,sans-serif;
+  color:#dff6ff;
+  background:radial-gradient(circle at 50% 10%, #0e3b55 0%, #03141f 60%, #00070c 100%);
+}
 
-  /* soft light rays */
-  body::before{
-    content:"";
-    position:absolute;
-    inset:0;
-    background:
-      linear-gradient(120deg, transparent 40%, rgba(120,200,255,.08), transparent 60%);
-    animation: rays 8s linear infinite;
-    pointer-events:none;
-  }
 
-  @keyframes rays{
-    from{transform:translateX(-30%)}
-    to{transform:translateX(30%)}
-  }
+body::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:radial-gradient(circle at center, transparent 40%, rgba(0,0,0,.65));
+  pointer-events:none;
+}
 
-  .word {
-    display: flex;
-    gap: 8px;
-    cursor: grab;
-    user-select: none;
-  }
 
-  .letter {
-    font-size: 64px;
-    font-weight: 700;
+body::before{
+  content:"";
+  position:absolute;
+  inset:-20%;
+  background:linear-gradient(120deg,transparent 40%,rgba(120,200,255,.07),transparent 60%);
+  animation:rays 10s linear infinite;
+}
+@keyframes rays{
+  from{transform:translateX(-30%)}
+  to{transform:translateX(30%)}
+}
 
-    cursor: grab;
-    position: relative;
-    transition: transform .15s ease;
-  }
 
-  .dragging {
-    cursor: grabbing;
-    transition: none;
-  }
+.bubble{
+  position:absolute;
+  bottom:-60px;
+  background:rgba(180,230,255,.25);
+  border-radius:50%;
+  animation:rise linear infinite;
+}
+@keyframes rise{
+  from{transform:translateY(0) scale(.7)}
+  to{transform:translateY(-120vh) scale(1.3)}
+}
+
+
+.words{
+  display:flex;
+  align-items:center;
+  gap:60px; 
+}
+
+
+.word{
+  display:flex;
+  gap:10px;
+}
+
+
+.letter{
+  font-size:80px;
+  font-weight:800;
+  text-shadow:
+    0 0 8px rgba(130,220,255,.7),
+    0 0 25px rgba(0,180,255,.6);
+  animation:float 4s ease-in-out infinite;
+}
+
+.word:nth-child(1) .letter:nth-child(2){animation-delay:.4s}
+.word:nth-child(1) .letter:nth-child(3){animation-delay:.8s}
+.word:nth-child(2) .letter:nth-child(2){animation-delay:1.2s}
+.word:nth-child(2) .letter:nth-child(3){animation-delay:1.6s}
+.word:nth-child(2) .letter:nth-child(4){animation-delay:2s}
+
+@keyframes float{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-14px)}
+}
+
+
+.subtitle{
+  margin-top:25px;
+  font-size:20px;
+  opacity:.9;
+  letter-spacing:.5px;
+  text-shadow:0 0 10px rgba(140,220,255,.4);
+  transition:.4s;
+}
 </style>
 </head>
 <body>
 
-<div class="word" id="word">
-  <div class="letter">S</div>
-  <div class="letter">E</div>
-  <div class="letter">A</div>
+<div class="words">
+  <div class="word">
+    <div class="letter">S</div>
+    <div class="letter">E</div>
+    <div class="letter">A</div>
+  </div>
+
+  <div class="word">
+    <div class="letter">B</div>
+    <div class="letter">E</div>
+    <div class="letter">A</div>
+    <div class="letter">N</div>
+  </div>
 </div>
 
+<div class="subtitle" id="subtitle"></div>
+
 <script>
-  const draggables = document.querySelectorAll('.word, .letter');
-
-  draggables.forEach(el => {
-    let startX = 0, startY = 0;
-
-    el.addEventListener('pointerdown', e => {
-      startX = e.clientX;
-      startY = e.clientY;
-      el.classList.add('dragging');
-      el.setPointerCapture(e.pointerId);
-    });
-
-    el.addEventListener('pointermove', e => {
-      if (!el.classList.contains('dragging')) return;
-      const dx = e.clientX - startX;
-      const dy = e.clientY - startY;
-      el.style.transform = `translate(${dx}px, ${dy}px)`;
-    });
-
-    el.addEventListener('pointerup', () => snapBack(el));
-    el.addEventListener('pointercancel', () => snapBack(el));
-  });
-
-  function snapBack(el){
-    el.classList.remove('dragging');
-    el.style.transform = 'translate(0,0)';
-  }
-</script>
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyCK730UgPUCtFKLACzSgGAAC1NK7EGrwhI",
-  authDomain: "nannin-2f398.firebaseapp.com",
-  projectId: "nannin-2f398"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-window.submitID = async () => {
-  const id = userIdInput.value.trim();
-  if (!id) return alert("Enter a valid ID");
-  localStorage.setItem("USER_ID", id);
-  await checkUser(id);
-};
-
-async function checkUser(id) {
-  const ref = doc(db, "users", id);
-  const snap = await getDoc(ref);
-
-  if (!snap.exists()) {
-    await setDoc(ref, { banned: false, createdAt: serverTimestamp() });
-  }
-
-  const data = (await getDoc(ref)).data();
-  if (data.banned) {
-    document.body.innerHTML = "<h1 style='text-align:center'>You are banned. lbozo EAT MUD </h1>";
-    return;
-  }
-
-  idGate.remove();
+function createBubble(){
+  const b=document.createElement("div");
+  b.className="bubble";
+  b.style.left=Math.random()*100+"vw";
+  b.style.animationDuration=(6+Math.random()*6)+"s";
+  const size=6+Math.random()*14;
+  b.style.width=size+"px";
+  b.style.height=size+"px";
+  document.body.appendChild(b);
+  setTimeout(()=>b.remove(),12000);
 }
+setInterval(createBubble,350);
 
-const saved = localStorage.getItem("USER_ID");
-if (saved) checkUser(saved);
+const lines=[
+"The tide remembers everything",
+"Floating in quiet infinity",
+"MathPunch is peak",
+"Swim through the web",
+"Why search the pond when you can search the sea"
+];
 
-window.loadPage = (el, url) => {
-  document.querySelectorAll(".item").forEach(i => i.classList.remove("active"));
-  el.classList.add("active");
-  mainFrame.src = url;
-};
+const subtitle=document.getElementById("subtitle");
+function newLine(){
+  subtitle.style.opacity=0;
+  setTimeout(()=>{
+    subtitle.textContent=lines[Math.floor(Math.random()*lines.length)];
+    subtitle.style.opacity=1;
+  },400);
+}
+newLine();
+setInterval(newLine,5000);
 </script>
+
 </body>
 </html>
